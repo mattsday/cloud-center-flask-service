@@ -43,10 +43,18 @@ fi
 upgrade() {
 	log "[UPGRADE] Updating OS with command $PKG_UPDATE"
 	$PKG_UPDATE
+	if (( $? > 0 )); then
+		log '[ERROR] OS Update failed'
+		exit 1
+	fi
 	# Debian requires two commands update & upgrade, so run them both
-	if [ "$FLAVOUR" = debian ]; then
+	if [[ "$FLAVOUR" = debian ]]; then
 		log "[UPGRADE] Upgrading OS with command $PKG_UPGRADE"
 		$PKG_UPGRADE
+		if (( $? > 0 )); then
+			log '[ERROR] OS Update failed'
+			exit 1
+		fi
 	fi
 }
 
@@ -58,6 +66,10 @@ install() {
 	# Install needed packages
 	log "[INSTALL] Installing required packages with command $PKG_INSTALL $PACKAGES"
 	$PKG_INSTALL $PACKAGES
+	if (( $? > 0 )); then
+		log '[ERROR] Package installation failed'
+		exit 1
+	fi
 
 	# Debian based distros need to explicitly enable the new mods etc
 	if [[ "$FLAVOUR" = debian ]]; then
@@ -74,6 +86,11 @@ install() {
 deploy() {
 	log '[DEPLOY] Deploying app'
 	curl -o flaskapp.zip "$SCRIPT_LOCATION"
+	if (( $? > 0 )) || [[ ! -f flaskapp.zip ]]; then
+		log '[ERROR] Script download failed'
+		exit 127
+	fi
+
 	WEB_ROOT="/var/www/flaskapp"
 	APP_NAME=`echo $SCRIPT_NAME | sed 's/\.py$//'`
 
@@ -101,20 +118,38 @@ deploy() {
 	sed 's/%APP_NAME%/'$APP_NAME'/g;s/%HOSTNAME%/'$cliqrNodeHostname'/g;s|%WEB_ROOT%|'$WEB_ROOT'|g' templates/wsgi-template.wsgi > "$WEB_ROOT/$APP_NAME.wsgi"
 	# Move python script(s) in to the same folder
 	unzip -d "$WEB_ROOT" ./flaskapp.zip
+	if (( $? > 0 )) || [[ ! -f flaskapp.zip ]]; then
+		log '[ERROR] Script download failed'
+		exit 127
+	fi
 	log '[DEPLOY] Completed deployment'
 }
 
 startservice() {
 	log ['START'] Started service
 	service $HTTPD_SERVICE start
+	if (( $? > 0 )); then
+		log '[ERROR] Service start failed'
+		exit 127
+	fi
 }
+
 stopservice() {
 	log ['STOP'] Stopped service
 	service $HTTPD_SERVICE stop
+	if (( $? > 0 )); then
+		log '[ERROR] Service stop failed'
+		exit 127
+	fi
 }
+
 restartservice() {
 	log ['RESTART'] Restarted service
 	service $HTTPD_SERVICE restart
+	if (( $? > 0 )); then
+		log '[ERROR] Service restart failed'
+		exit 127
+	fi
 }
 
 # Switch through CLI args
