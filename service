@@ -35,7 +35,7 @@ elif [[ -x /usr/bin/yum ]]; then
 	PKG_UPGRADE=""
 	HTTPD_SERVICE=httpd
 else
-	log [ERROR] Cannot detect operating system
+	log '[ERROR] Cannot detect operating system'
 	# Error out - can't detect OS!
 	exit 1
 fi
@@ -52,7 +52,7 @@ upgrade() {
 
 # Update the OS and install the needed libraries
 install() {
-	log [INSTALL] Requesting OS upgrade
+	log '[INSTALL] Requesting OS upgrade'
 	# Run OS upgrade
 	upgrade
 	# Install needed packages
@@ -61,7 +61,7 @@ install() {
 
 	# Debian based distros need to explicitly enable the new mods etc
 	if [[ "$FLAVOUR" = debian ]]; then
-		log [INSTALL] Running debian-flavour specific commands
+		log '[INSTALL] Running debian-flavour specific commands'
 		# Enable wsgi module and disable default vhost
 		a2enmod wsgi
 		a2dissite 000-default default-ssl
@@ -72,17 +72,22 @@ install() {
 }
 
 deploy() {
+	log '[DEPLOY] Deploying app'
 	curl -o flaskapp.zip "$SCRIPT_LOCATION"
 	WEB_ROOT="/var/www/flaskapp"
 	APP_NAME=`echo $SCRIPT_NAME | sed 's/\.py$//'`
 
 	if [[ "$FLAVOUR" = debian ]]; then
 		CONFIG_FILE="/etc/apache2/sites-available/flaskapp.conf"
+		WEB_USER="www-data"
 	elif [[ "$FLAVOUR" = redhat ]]; then
 		CONFIG_FILE="/etc/httpd/conf.d/flaskapp.conf"
+		WEB_USER="apache"
 	fi
 
-	sed 's/%APP_NAME%/'$APP_NAME'/g;s/%HOSTNAME%/'$cliqrNodeHostname'/g;s|%WEB_ROOT%|'$WEB_ROOT'|g;s/%USER%/apache/g' templates/apache-template.conf > "$CONFIG_FILE"
+	sed 's/%APP_NAME%/'$APP_NAME'/g;s/%HOSTNAME%/'$cliqrNodeHostname'/g;s|%WEB_ROOT%|'$WEB_ROOT'|g;s/%USER%/'$WEB_USER'/g' templates/apache-template.conf > "$CONFIG_FILE"
+
+	log '[DEPLOY] Configured apache'
 
 	# Enable the site if debian flavoured
 	if [[ "$FLAVOUR" = debian ]]; then
@@ -96,15 +101,19 @@ deploy() {
 	sed 's/%APP_NAME%/'$APP_NAME'/g;s/%HOSTNAME%/'$cliqrNodeHostname'/g;s|%WEB_ROOT%|'$WEB_ROOT'|g' templates/wsgi-template.wsgi > "$WEB_ROOT/$APP_NAME.wsgi"
 	# Move python script(s) in to the same folder
 	unzip -d "$WEB_ROOT" ./flaskapp.zip
+	log '[DEPLOY] Completed deployment'
 }
 
 startservice() {
+	log ['START'] Started service
 	service $HTTPD_SERVICE start
 }
 stopservice() {
+	log ['STOP'] Stopped service
 	service $HTTPD_SERVICE stop
 }
 restartservice() {
+	log ['RESTART'] Restarted service
 	service $HTTPD_SERVICE restart
 }
 
