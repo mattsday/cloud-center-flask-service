@@ -90,9 +90,27 @@ upgrade() {
 install() {
 	# Run OS upgrade
 	upgrade
+}
+
+configure() {
+	# Should the super user be enabled for debugging?
+	if [[ "$SUPER_USER" = Enabled ]]; then
+		echo -e 'cliqruser\tALL=(ALL:ALL) NOPASSWD: ALL' >> /etc/sudoers
+	fi
+
+	# python-flask is in epel for CentOS/Red Hat 6
+	if (( $RH_VERSION < 7 )); then
+		log '[CONFIGURE] Adding epel repository'
+		yum -y install epel-release
+		# epel uses https, so configure a proxy for it
+		if [[ "$ENABLE_PROXY" = Enabled ]] && [[ ! -z $PROXY ]]; then
+			# Modify the epel repo to include the proxy server
+			sed -i 's|\(\[epel.*\]\)|&\nproxy='$PROXY'|' /etc/yum.repos.d/epel.repo
+		fi
+	fi
 
 	# Install needed packages
-	log "[INSTALL] Installing required packages with command $PKG_INSTALL $PACKAGES"
+	log "[CONFIGURE] Installing required packages with command $PKG_INSTALL $PACKAGES"
 	$PKG_INSTALL $PACKAGES
 	if (( $? > 0 )); then
 		log '[ERROR] Package installation failed'
@@ -101,39 +119,17 @@ install() {
 
 	# Debian based distros need to explicitly enable the new mods etc
 	if [[ "$FLAVOUR" = debian ]]; then
-		log '[INSTALL] Running debian-flavour specific commands'
+		log '[CONFIGURE] Running debian-flavour specific commands'
 		# Enable wsgi module and disable default vhost
 		a2enmod wsgi
 		a2dissite 000-default default-ssl
 		# Make sure the apache service is stopped
 	fi
-	log '[INSTALL] Stopping httpd service (in case it is enabled)'
+	log '[CONFIGURE] Stopping httpd service (in case it is enabled)'
 	service $HTTPD_SERVICE stop
-
-}
-
-configure() {
-	echo Proxy is $PROXY>proxy_proof
 }
 
 deploy() {
-	# Should the super user be enabled?
-	if [[ "$SUPER_USER" = Enabled ]]; then
-		echo -e 'cliqruser\tALL=(ALL:ALL) NOPASSWD: ALL' >> /etc/sudoers
-	fi
-
-	# python-flask is in epel for CentOS/Red Hat 6
-	if (( $RH_VERSION < 7 )); then
-		log '[INSTALL] Adding epel repository'
-		echo yum -y install epel-release > intention
-		# epel uses https, so configure a proxy for it
-		if [[ "$ENABLE_PROXY" = Enabled ]] && [[ ! -z $PROXY ]]; then
-			# Modify the epel repo to include the proxy server
-			sed -i 's|\[epel\]|\[epel\]\nproxy='$PROXY'|; s|\[epel-debuginfo\]|\[epel-debuginfo\]\nproxy='$PROXY'|; s|\[epel-source\]|\[epel-source\]\nproxy='$PROXY'|' /etc/yum.repos.d/epel.repo
-		fi
-		yum - y install python-flask
-	fi
-
 	log '[DEPLOY] Deploying app'
 	curl -o flaskapp.zip "$SCRIPT_LOCATION"
 	if (( $? > 0 )) || [[ ! -f flaskapp.zip ]]; then
