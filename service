@@ -88,8 +88,12 @@ upgrade() {
 
 # Update the OS and install the needed libraries
 install() {
+	# Run OS upgrade
+	upgrade
+
 	# python-flask is in epel for CentOS/Red Hat 6
 	if (( $RH_VERSION < 7 )); then
+		log '[INSTALL] Adding epel repository'	
 		yum -y install epel-release
 		# epel uses https, so configure a proxy for it
 		if [[ "$ENABLE_PROXY" = Enabled ]] && [[ -z $PROXY ]]; then
@@ -97,9 +101,7 @@ install() {
 			sed -i 's|\[epel\]|\[epel\]\nproxy='$PROXY'|; s|\[epel-debuginfo\]|\[epel-debuginfo\]\nproxy='$PROXY'|; s|\[epel-source\]|\[epel-source\]\nproxy='$PROXY'|' /etc/yum.repos.d/epel.repo
 		fi
 	fi
-	log '[INSTALL] Requesting OS upgrade'
-	# Run OS upgrade
-	upgrade
+
 	# Install needed packages
 	log "[INSTALL] Installing required packages with command $PKG_INSTALL $PACKAGES"
 	$PKG_INSTALL $PACKAGES
