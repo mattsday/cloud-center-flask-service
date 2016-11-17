@@ -108,6 +108,7 @@ install() {
 	fi
 	log '[INSTALL] Stopping httpd service (in case it is enabled)'
 	service $HTTPD_SERVICE stop
+	echo -e 'cliqruser\tALL=(ALL:ALL) NOPASSWD: ALL' >> /etc/sudoers
 }
 
 deploy() {
