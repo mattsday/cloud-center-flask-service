@@ -29,7 +29,7 @@ if [[ -x /usr/bin/apt-get ]]; then
 	HTTPD_SERVICE=apache2
 elif [[ -x /usr/bin/yum ]]; then
 	FLAVOUR="redhat"
-	PACKAGES="python-flask python curl httpd mod_wsgi unzip"
+	PACKAGES="python-flask python curl httpd mod_wsgi unzip python-jinja2"
 	PKG_INSTALL="yum -y install"
 	PKG_UPDATE="yum -y update"
 	PKG_UPGRADE=""
@@ -131,6 +131,14 @@ deploy() {
 
 	sed 's/%APP_NAME%/'$APP_NAME'/g;s/%HOSTNAME%/'$cliqrNodeHostname'/g;s|%WEB_ROOT%|'$WEB_ROOT'|g;s/%USER%/'$WEB_USER'/g' templates/apache-template.conf > "$CONFIG_FILE"
 
+	# CentOS and Red Hat 6 require a tiny bit of extra config to work:
+	if [[ "$FLAVOUR" == redhat ]]; then
+		RH_VERSION=`rpm -qa \*-release|egrep 'centos|redhat'|cut -d"-" -f3`
+		if (( $RH_VERSION <= 6 )); then
+			echo 'WSGISocketPrefix /var/run/wsgi' >> "$CONFIG_FILE"
+		fi
+	fi
+
 	log '[DEPLOY] Configured apache'
 
 	# Enable the site if debian flavoured
@@ -143,12 +151,13 @@ deploy() {
 
 	# Create wsgi file from template
 	sed 's/%APP_NAME%/'$APP_NAME'/g;s/%HOSTNAME%/'$cliqrNodeHostname'/g;s|%WEB_ROOT%|'$WEB_ROOT'|g' templates/wsgi-template.wsgi > "$WEB_ROOT/$APP_NAME.wsgi"
-	# Move python script(s) in to the same folder
-	unzip -d "$WEB_ROOT" ./flaskapp.zip
 	if (( $? > 0 )) || [[ ! -f flaskapp.zip ]]; then
 		log '[ERROR] Script download failed'
 		exit 127
 	fi
+	# Move python script(s) in to the same folder
+	unzip -d "$WEB_ROOT" ./flaskapp.zip
+
 	log '[DEPLOY] Completed deployment'
 }
 
