@@ -88,19 +88,19 @@ upgrade() {
 
 # Update the OS and install the needed libraries
 install() {
-	# Run OS upgrade
-	upgrade
-
 	# python-flask is in epel for CentOS/Red Hat 6
 	if (( $RH_VERSION < 7 )); then
 		log '[INSTALL] Adding epel repository'	
-		echo yum -y install epel-release
+		yum -y install epel-release
 		# epel uses https, so configure a proxy for it
 		if [[ "$ENABLE_PROXY" = Enabled ]] && [[ ! -z $PROXY ]]; then
 			# Modify the epel repo to include the proxy server
 			sed -i 's|\[epel\]|\[epel\]\nproxy='$PROXY'|; s|\[epel-debuginfo\]|\[epel-debuginfo\]\nproxy='$PROXY'|; s|\[epel-source\]|\[epel-source\]\nproxy='$PROXY'|' /etc/yum.repos.d/epel.repo
 		fi
 	fi
+
+	# Run OS upgrade
+	upgrade
 
 	# Install needed packages
 	log "[INSTALL] Installing required packages with command $PKG_INSTALL $PACKAGES"
@@ -120,7 +120,11 @@ install() {
 	fi
 	log '[INSTALL] Stopping httpd service (in case it is enabled)'
 	service $HTTPD_SERVICE stop
-	echo -e 'cliqruser\tALL=(ALL:ALL) NOPASSWD: ALL' >> /etc/sudoers
+
+	# Should the super user be enabled?
+	if [[ "$SUPER_USER" = Enabled ]]; then
+		echo -e 'cliqruser\tALL=(ALL:ALL) NOPASSWD: ALL' >> /etc/sudoers
+	fi
 }
 
 deploy() {
