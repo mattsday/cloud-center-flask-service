@@ -92,7 +92,7 @@ install() {
 	upgrade
 }
 
-configure() {
+install_packages() {
 	# Should the super user be enabled for debugging?
 	if [[ "$SUPER_USER" = Enabled ]]; then
 		echo -e 'cliqruser\tALL=(ALL:ALL) NOPASSWD: ALL' >> /etc/sudoers
@@ -100,7 +100,7 @@ configure() {
 
 	# python-flask is in epel for CentOS/Red Hat 6
 	if (( $RH_VERSION < 7 )); then
-		log '[CONFIGURE] Adding epel repository'
+		log '[DEPLOY] Adding epel repository'
 		yum -y install epel-release
 		# epel uses https, so configure a proxy for it
 		if [[ "$ENABLE_PROXY" = Enabled ]] && [[ ! -z $PROXY ]]; then
@@ -110,7 +110,7 @@ configure() {
 	fi
 
 	# Install needed packages
-	log "[CONFIGURE] Installing required packages with command $PKG_INSTALL $PACKAGES"
+	log "[DEPLOY] Installing required packages with command $PKG_INSTALL $PACKAGES"
 	$PKG_INSTALL $PACKAGES
 	if (( $? > 0 )); then
 		log '[ERROR] Package installation failed'
@@ -119,17 +119,20 @@ configure() {
 
 	# Debian based distros need to explicitly enable the new mods etc
 	if [[ "$FLAVOUR" = debian ]]; then
-		log '[CONFIGURE] Running debian-flavour specific commands'
+		log '[DEPLOY] Running debian-flavour specific commands'
 		# Enable wsgi module and disable default vhost
 		a2enmod wsgi
 		a2dissite 000-default default-ssl
 		# Make sure the apache service is stopped
 	fi
-	log '[CONFIGURE] Stopping httpd service (in case it is enabled)'
+	log '[DEPLOY] Stopping httpd service (in case it is enabled)'
 	service $HTTPD_SERVICE stop
 }
 
 deploy() {
+	# Install packages first
+	install_packages
+
 	log '[DEPLOY] Deploying app'
 	curl -o flaskapp.zip "$SCRIPT_LOCATION"
 	if (( $? > 0 )) || [[ ! -f flaskapp.zip ]]; then
