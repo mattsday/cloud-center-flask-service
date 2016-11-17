@@ -90,8 +90,12 @@ upgrade() {
 install() {
 	# python-flask is in epel for CentOS/Red Hat 6
 	if (( $RH_VERSION < 7 )); then
-		log '[INSTALL] Adding epel repository'	
-		yum -y install epel-release
+		log '[INSTALL] Adding epel repository'
+	#	if [[ "$ENABLE_PROXY" = Enabled ]] && [[ ! -z $PROXY ]]; then
+	#		# Just enable the proxy for everything
+	#		echo proxy=$PROXY > /etc/yum.conf
+	#	fi
+		echo yum -y install epel-release > intention
 		# epel uses https, so configure a proxy for it
 		if [[ "$ENABLE_PROXY" = Enabled ]] && [[ ! -z $PROXY ]]; then
 			# Modify the epel repo to include the proxy server
