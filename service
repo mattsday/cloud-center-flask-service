@@ -47,7 +47,7 @@ fi
 # PROXY - proxy to use, e.g. http://proxy.esl.cisco.com:80/
 # NO_PROXY_HOSTS - hosts to never proxy, e.g. .cisco.com
 # NO_PROXY_RANGE - /24 subnets to not proxy, e.g. 10.52.208 10.51.8
-if [[ "$ENABLE_PROXY" = Enabled ]] && [[ -z $PROXY ]]; then
+if [[ "$ENABLE_PROXY" = Enabled ]] && [[ ! -z $PROXY ]]; then
     export PROXY=$PROXY
     export proxy=$PROXY
     export http_proxy=$PROXY
@@ -56,10 +56,10 @@ if [[ "$ENABLE_PROXY" = Enabled ]] && [[ -z $PROXY ]]; then
     export HTTP_PROXY=$PROXY
     export HTTPS_PROXY=$PROXY
     export FTP_PROXY=$PROXY
-    if [[ -z $NO_PROXY_HOSTS ]]; then
+    if [[ ! -z $NO_PROXY_HOSTS ]]; then
         no_proxy=$(echo $NO_PROXY_HOSTS | sed 's/ /,/g')
     fi
-    if [[ -z $NO_PROXY_RANGE ]]; then
+    if [[ ! -z $NO_PROXY_RANGE ]]; then
         for ip in $NO_PROXY_RANGE; do
             no_proxy="$no_proxy,$(echo $ip.{0..255} | sed 's/ /,/g')"
         done
@@ -94,12 +94,11 @@ install() {
 	# python-flask is in epel for CentOS/Red Hat 6
 	if (( $RH_VERSION < 7 )); then
 		log '[INSTALL] Adding epel repository'	
-#		echo yum -y install epel-release
+		echo yum -y install epel-release
 		# epel uses https, so configure a proxy for it
-		if [[ "$ENABLE_PROXY" = Enabled ]] && [[ -z $PROXY ]]; then
+		if [[ "$ENABLE_PROXY" = Enabled ]] && [[ ! -z $PROXY ]]; then
 			# Modify the epel repo to include the proxy server
-#			sed -i 's|\[epel\]|\[epel\]\nproxy='$PROXY'|; s|\[epel-debuginfo\]|\[epel-debuginfo\]\nproxy='$PROXY'|; s|\[epel-source\]|\[epel-source\]\nproxy='$PROXY'|' /etc/yum.repos.d/epel.repo
-			echo testd
+			sed -i 's|\[epel\]|\[epel\]\nproxy='$PROXY'|; s|\[epel-debuginfo\]|\[epel-debuginfo\]\nproxy='$PROXY'|; s|\[epel-source\]|\[epel-source\]\nproxy='$PROXY'|' /etc/yum.repos.d/epel.repo
 		fi
 	fi
 
