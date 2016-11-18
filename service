@@ -129,7 +129,7 @@ configure_proxy() {
 			NO_PROXY_RANGE=$(echo $NO_PROXY_RANGE | sed 's/,/ /g')
 	        for ip in $NO_PROXY_RANGE; do
 				# Sanitise IP address (removing trailing .)
-				ip=$(echo $ip | sed 's/\.//')
+				ip=$(echo $ip | sed 's/\.$//')
 	            no_proxy="$no_proxy,$(echo $ip.{0..255} | sed 's/ /,/g')"
 	        done
 	        export no_proxy
