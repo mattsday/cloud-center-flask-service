@@ -41,32 +41,6 @@ else
 	exit 1
 fi
 
-# Is a proxy configured or needed?
-# Variables:
-# ENABLE_PROXY - If set to "Enabled" proxy support will be turned on
-# PROXY - proxy to use, e.g. http://proxy.esl.cisco.com:80/
-# NO_PROXY_HOSTS - hosts to never proxy, e.g. .cisco.com
-# NO_PROXY_RANGE - /24 subnets to not proxy, e.g. 10.52.208 10.51.8
-if [[ "$ENABLE_PROXY" = Enabled ]] && [[ ! -z $PROXY ]]; then
-    export PROXY=$PROXY
-    export proxy=$PROXY
-    export http_proxy=$PROXY
-    export https_proxy=$PROXY
-    export ftp_proxy=$PROXY
-    export HTTP_PROXY=$PROXY
-    export HTTPS_PROXY=$PROXY
-    export FTP_PROXY=$PROXY
-    if [[ ! -z $NO_PROXY_HOSTS ]]; then
-        no_proxy=$(echo $NO_PROXY_HOSTS | sed 's/ /,/g')
-    fi
-    if [[ ! -z $NO_PROXY_RANGE ]]; then
-        for ip in $NO_PROXY_RANGE; do
-            no_proxy="$no_proxy,$(echo $ip.{0..255} | sed 's/ /,/g')"
-        done
-        export no_proxy
-        export NO_PROXY=$no_proxy
-    fi
-fi
 
 upgrade() {
 	log "[UPGRADE] Updating OS with command $PKG_UPDATE"
@@ -129,8 +103,56 @@ install_packages() {
 	service $HTTPD_SERVICE stop
 }
 
+configure_proxy() {
+	# Is a proxy configured or needed?
+	# Variables:
+	# ENABLE_PROXY - If set to "Enabled" proxy support will be turned on
+	# PROXY - proxy to use, e.g. http://proxy.esl.cisco.com:80/
+	# NO_PROXY_HOSTS - hosts to never proxy, e.g. .cisco.com
+	# NO_PROXY_RANGE - /24 subnets to not proxy, e.g. 10.52.208 10.51.8
+	if [[ "$ENABLE_PROXY" = Enabled ]] && [[ ! -z $PROXY ]]; then
+	    export PROXY=$PROXY
+	    export proxy=$PROXY
+	    export http_proxy=$PROXY
+	    export https_proxy=$PROXY
+	    export ftp_proxy=$PROXY
+	    export HTTP_PROXY=$PROXY
+	    export HTTPS_PROXY=$PROXY
+	    export FTP_PROXY=$PROXY
+	    if [[ ! -z $NO_PROXY_HOSTS ]]; then
+			# In case this was passed as a comma separated input, remove the commas
+			NO_PROXY_HOSTS=$(echo $NO_PROXY_HOSTS | sed 's/,/ /g')
+	        no_proxy=$(echo $NO_PROXY_HOSTS | sed 's/ /,/g')
+	    fi
+		if [[ ! -z $NO_PROXY_RANGE ]]; then
+			# In case this was passed as a comma separated input, remove the commas
+			NO_PROXY_RANGE=$(echo $NO_PROXY_RANGE | sed 's/,/ /g')
+	        for ip in $NO_PROXY_RANGE; do
+				# Sanitise IP address (removing trailing .)
+				ip=$(echo $ip | sed 's/\.//')
+	            no_proxy="$no_proxy,$(echo $ip.{0..255} | sed 's/ /,/g')"
+	        done
+	        export no_proxy
+	        export NO_PROXY=$no_proxy
+	    fi
+		# Variables to add to user env
+		proxy_vars="proxy http_proxy https_proxy ftp_proxy no_proxy PROXY HTTP_PROXY HTTPS_PROXY FTP_PROXY NO_PROXY"
+		for env in $proxy_vars; do
+			if [[ ! -z $(eval echo \$$env) ]]; then
+				echo export $env=\"$(eval echo \$$env)\" >> /usr/local/osmosix/etc/userenv
+			fi
+		done
+		# Source back changes
+		. /usr/local/osmosix/etc/userenv
+		unset proxy_vars
+	fi
+}
+
 deploy() {
-	# Install packages first
+	# Configure proxy
+	configure_proxy
+
+	# Install packages
 	install_packages
 
 	log '[DEPLOY] Deploying app'
