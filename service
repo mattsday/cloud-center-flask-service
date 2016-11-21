@@ -43,6 +43,7 @@ fi
 
 
 upgrade() {
+	[[ "$UPGRADE_OS" == false ]] && return
 	log "[UPGRADE] Updating OS with command $PKG_UPDATE"
 	$PKG_UPDATE
 	if (( $? > 0 )); then
@@ -82,7 +83,10 @@ install_packages() {
 			sed -i 's|\(\[epel.*\]\)|&\nproxy='$PROXY'|' /etc/yum.repos.d/epel.repo
 		fi
 	fi
-
+	# Debian needs to update its package cache
+	if [[ "$FLAVOUR" == Debian ]]; then
+		$PKG_UPDATE
+	fi
 	# Install needed packages
 	log "[DEPLOY] Installing required packages with command $PKG_INSTALL $PACKAGES"
 	$PKG_INSTALL $PACKAGES
