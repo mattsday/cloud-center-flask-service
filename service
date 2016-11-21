@@ -62,12 +62,6 @@ upgrade() {
 	fi
 }
 
-# Update the OS and install the needed libraries
-install() {
-	# Run OS upgrade
-	# upgrade
-}
-
 install_packages() {
 	# Run an upgrade
 	upgrade
@@ -241,8 +235,7 @@ restartservice() {
 # Switch through CLI args
 case $1 in
 	install)
-		# Run installation script
-		install
+		# Run pre-installation script
 		;;
 	configure)
 		# Configuration script
