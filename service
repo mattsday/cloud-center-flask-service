@@ -44,7 +44,7 @@ fi
 
 upgrade() {
 	# Don't upgrade if it's been disabled:
-	[[ "$UPGRADE_OS" == false ]] && return
+	[[ "$UPGRADE_OS" = false ]] && return
 	log "[UPGRADE] Updating OS with command $PKG_UPDATE"
 	$PKG_UPDATE
 	if (( $? > 0 )); then
@@ -81,7 +81,7 @@ install_packages() {
 		fi
 	fi
 	# Debian needs to update its package cache
-	if [[ "$FLAVOUR" == Debian ]]; then
+	if [[ "$FLAVOUR" = Debian ]]; then
 		$PKG_UPDATE
 	fi
 	# Install needed packages
@@ -177,7 +177,7 @@ deploy() {
 	sed 's/%APP_NAME%/'$APP_NAME'/g;s/%HOSTNAME%/'$cliqrNodeHostname'/g;s|%WEB_ROOT%|'$WEB_ROOT'|g;s/%USER%/'$WEB_USER'/g' templates/apache-template.conf > "$CONFIG_FILE"
 
 	# CentOS and Red Hat 6 require a tiny bit of extra config to work:
-	if [[ "$FLAVOUR" == redhat ]]; then
+	if [[ "$FLAVOUR" = redhat ]]; then
 		if (( $RH_VERSION <= 6 )); then
 			echo 'WSGISocketPrefix /var/run/wsgi' >> "$CONFIG_FILE"
 		fi
