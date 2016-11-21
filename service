@@ -43,6 +43,7 @@ fi
 
 
 upgrade() {
+	# Don't upgrade if it's been disabled:
 	[[ "$UPGRADE_OS" == false ]] && return
 	log "[UPGRADE] Updating OS with command $PKG_UPDATE"
 	$PKG_UPDATE
@@ -64,10 +65,12 @@ upgrade() {
 # Update the OS and install the needed libraries
 install() {
 	# Run OS upgrade
-	upgrade
+	# upgrade
 }
 
 install_packages() {
+	# Run an upgrade
+	upgrade
 	# Should the super user be enabled for debugging?
 	if [[ "$SUPER_USER" = Enabled ]]; then
 		echo -e 'cliqruser\tALL=(ALL:ALL) NOPASSWD: ALL' >> /etc/sudoers
