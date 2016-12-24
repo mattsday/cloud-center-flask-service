@@ -98,8 +98,8 @@ install_packages() {
 		# Enable wsgi module and disable default vhost
 		a2enmod wsgi
 		a2dissite 000-default default-ssl
-		# Make sure the apache service is stopped
 	fi
+	# Make sure the apache service is stopped
 	log '[DEPLOY] Stopping httpd service (in case it is enabled)'
 	service $HTTPD_SERVICE stop
 }
